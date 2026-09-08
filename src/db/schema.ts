@@ -37,6 +37,7 @@ export const craftsmanProfiles = pgTable("craftsman_profiles", {
   website: text("website"),
   avatarUrl: text("avatar_url"),
   verified: boolean("verified").notNull().default(false),
+  creditBalance: integer("credit_balance").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -125,6 +126,43 @@ export const offers = pgTable("offers", {
   status: text("status", {
     enum: ["PENDING", "ACCEPTED", "REJECTED", "WITHDRAWN"],
   })
+    .notNull()
+    .default("PENDING"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ---------- Lead-Freischaltungen (Handwerker zahlt, um Kontaktdaten zu sehen) ----------
+export const leadUnlocks = pgTable("lead_unlocks", {
+  id: text("id").primaryKey(),
+  jobId: text("job_id")
+    .notNull()
+    .references(() => jobs.id, { onDelete: "cascade" }),
+  craftsmanId: text("craftsman_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  priceChf: doublePrecision("price_chf").notNull(),
+  paymentMethod: text("payment_method", { enum: ["CREDIT", "STRIPE"] }).notNull(),
+  stripeSessionId: text("stripe_session_id"),
+  status: text("status", { enum: ["PENDING", "PAID", "FAILED"] })
+    .notNull()
+    .default("PENDING"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ---------- Guthaben-Käufe (Credit-Pakete) ----------
+export const creditPurchases = pgTable("credit_purchases", {
+  id: text("id").primaryKey(),
+  craftsmanId: text("craftsman_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  credits: integer("credits").notNull(),
+  amountChf: doublePrecision("amount_chf").notNull(),
+  stripeSessionId: text("stripe_session_id"),
+  status: text("status", { enum: ["PENDING", "PAID", "FAILED"] })
     .notNull()
     .default("PENDING"),
   createdAt: timestamp("created_at", { withTimezone: true })

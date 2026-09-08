@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { MapPin, Wallet, ArrowRight, ListChecks } from "lucide-react";
+import { MapPin, Wallet, ArrowRight, ListChecks, Coins } from "lucide-react";
 import { requireUser, getCurrentCraftsmanProfile } from "@/lib/session";
 import { getOpenJobsForCraftsman } from "@/lib/queries";
 
@@ -18,7 +18,13 @@ export default async function CraftsmanDashboardPage() {
           <h1 className="text-2xl font-bold text-primary-800">Passende Aufträge</h1>
           <p className="text-sm text-primary-500">Willkommen zurück, {user.name.split(" ")[0]}.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/dashboard/handwerker/guthaben"
+            className="inline-flex items-center gap-2 rounded-lg border border-primary-200 px-4 py-2.5 text-sm font-semibold text-primary-700 hover:bg-primary-50"
+          >
+            <Coins size={16} /> {profile?.creditBalance ?? 0} Guthaben
+          </Link>
           <Link
             href="/dashboard/handwerker/angebote"
             className="inline-flex items-center gap-2 rounded-lg border border-primary-200 px-4 py-2.5 text-sm font-semibold text-primary-700 hover:bg-primary-50"

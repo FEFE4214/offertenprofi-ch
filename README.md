@@ -15,6 +15,12 @@ von Renovero/MyHammer, aber mit eigenem Namen, Branding und Quellcode — **kein
 - 16 Gewerke-Kategorien mit eigenen Übersichtsseiten
 - Sternebewertungen nach Auftragsabschluss + "Verifiziert"-Siegel für Handwerker
 - Responsive Design (Desktop & Mobile), eigenes Farbschema/Branding
+- **Bezahlte Lead-Freischaltung**: Handwerker sehen Kontaktdaten (Telefon/E-Mail) eines Kunden erst,
+  nachdem sie CHF 15–25 (je nach Auftragsgrösse) bezahlt haben — per Einzelzahlung (Stripe Checkout:
+  Karte, TWINT, Banküberweisung je nach Stripe-Konfiguration) oder aus einem vorab gekauften
+  Guthaben-Paket (günstiger pro Freischaltung)
+- **KI-Live-Support-Chat**: Chat-Widget unten rechts auf jeder Seite, beantwortet Besucherfragen zur
+  Plattform automatisch (Claude API)
 
 ## Tech-Stack
 
@@ -73,6 +79,10 @@ Render-Umgebungsvariablen):
 |---|---|
 | `DATABASE_URL` | PostgreSQL-Verbindungsstring, z. B. `postgres://user:pass@host:5432/dbname` |
 | `AUTH_SECRET` | Zufälliger, geheimer Wert zum Signieren der Session-Cookies (JWT) |
+| `STRIPE_SECRET_KEY` | *(optional)* Stripe-Secret-Key — ohne diesen Wert funktioniert die App weiterhin, Zahlungen (Lead-Freischaltung, Guthaben-Kauf) sind dann aber deaktiviert und zeigen einen Hinweis statt eines Zahlungs-Buttons |
+| `STRIPE_WEBHOOK_SECRET` | *(optional, nur mit Stripe)* Signing-Secret des Stripe-Webhooks (`/api/stripe/webhook`), bestätigt eingehende Zahlungen zuverlässig im Hintergrund |
+| `ANTHROPIC_API_KEY` | *(optional)* Claude-API-Key für den Live-Support-Chat — ohne diesen Wert zeigt der Chat einen freundlichen Platzhalter-Hinweis statt echter Antworten |
+| `ANTHROPIC_MODEL` | *(optional)* Anthropic-Modell für den Support-Chat, Standard: `claude-haiku-4-5` |
 
 Ein neuer `AUTH_SECRET` lässt sich so erzeugen:
 
@@ -133,6 +143,31 @@ src/
    `AUTH_SECRET` (siehe oben) im Web Service hinterlegen.
 5. Deploy auslösen — die App ist danach unter der von Render vergebenen `*.onrender.com`-URL
    erreichbar (eine eigene Domain kann später verbunden werden).
+
+### Zahlungen aktivieren (Stripe)
+
+Ohne `STRIPE_SECRET_KEY` läuft die Plattform normal weiter, Handwerker sehen bei der
+Kontakt-Freischaltung und beim Guthaben-Kauf aber nur einen Hinweis statt eines Zahlungs-Buttons.
+So aktivierst du echte Zahlungen:
+
+1. Kostenlos auf [stripe.com](https://stripe.com) registrieren (für Testzahlungen reicht die
+   Registrierung allein, ohne Geschäftsverifizierung).
+2. Im Stripe-Dashboard unter "Developers → API keys" den Secret Key kopieren → als
+   `STRIPE_SECRET_KEY` im Render Web Service hinterlegen.
+3. Unter "Payment methods" die gewünschten Zahlarten aktivieren (Karte, TWINT, weitere je nach
+   Verfügbarkeit in der Schweiz) — welche davon angeboten werden, entscheidet ausschliesslich diese
+   Dashboard-Einstellung, nicht der Code.
+4. Unter "Developers → Webhooks" einen Endpoint auf `https://<deine-domain>/api/stripe/webhook`
+   mit Event `checkout.session.completed` anlegen → das Signing-Secret als `STRIPE_WEBHOOK_SECRET`
+   hinterlegen.
+5. Sobald alles läuft und du bereit für echtes Geld bist: im Stripe-Dashboard von Test- auf
+   Live-Modus wechseln und die Live-Keys statt der Test-Keys hinterlegen.
+
+### Live-Support-Chat aktivieren
+
+Ohne `ANTHROPIC_API_KEY` zeigt der Chat-Button unten rechts einen freundlichen Platzhalter-Hinweis.
+Für echte KI-Antworten einen API-Key unter [console.anthropic.com](https://console.anthropic.com)
+erstellen und als `ANTHROPIC_API_KEY` im Render Web Service hinterlegen.
 
 ## Von der Demo zur echten Produktivplattform
 

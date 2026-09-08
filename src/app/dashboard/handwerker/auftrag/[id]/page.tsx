@@ -1,25 +1,42 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { MapPin, Calendar, Wallet, ArrowLeft } from "lucide-react";
-import { requireUser } from "@/lib/session";
-import { getJobDetail } from "@/lib/queries";
+import { MapPin, Calendar, Wallet, ArrowLeft, Lock, Phone, Mail, Coins } from "lucide-react";
+import { requireUser, getCurrentCraftsmanProfile } from "@/lib/session";
+import { getJobDetail, getLeadUnlock, getCustomerContact } from "@/lib/queries";
 import { cantonName } from "@/lib/cantons";
 import { JobStatusBadge, OfferStatusBadge } from "@/components/StatusBadge";
+import { calculateLeadPrice } from "@/lib/leadPricing";
+import { stripeEnabled } from "@/lib/stripe";
+import { unlockJobContactAction, confirmStripeSessionIfPaid } from "@/app/actions/payments";
 import OfferForm from "./OfferForm";
 
 export const metadata: Metadata = { title: "Auftrag ansehen — Offertenprofi.ch" };
 
-type Props = { params: Promise<{ id: string }> };
+type Props = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ unlock_session_id?: string }>;
+};
 
-export default async function CraftsmanJobDetailPage({ params }: Props) {
+export default async function CraftsmanJobDetailPage({ params, searchParams }: Props) {
   const { id } = await params;
+  const { unlock_session_id } = await searchParams;
   const user = await requireUser("CRAFTSMAN");
+
+  if (unlock_session_id) {
+    await confirmStripeSessionIfPaid(unlock_session_id);
+  }
+
   const detail = await getJobDetail(id);
   if (!detail) notFound();
 
   const { job, category, customerName, offers } = detail;
   const myOffer = offers.find((o) => o.craftsmanId === user.id) ?? null;
+
+  const unlock = await getLeadUnlock(job.id, user.id);
+  const contact = unlock ? await getCustomerContact(job.customerId) : null;
+  const profile = await getCurrentCraftsmanProfile();
+  const leadPrice = calculateLeadPrice(job);
 
   return (
     <div className="container-page py-12">
@@ -78,6 +95,63 @@ export default async function CraftsmanJobDetailPage({ params }: Props) {
               <p className="mt-3 text-sm text-primary-500">
                 Dieser Auftrag ist nicht mehr offen für neue Angebote.
               </p>
+            )}
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-primary-100 bg-white p-6">
+            <h2 className="font-semibold text-primary-800">Kontaktdaten</h2>
+
+            {contact ? (
+              <div className="mt-3 space-y-2 text-sm">
+                <p className="font-medium text-primary-800">{contact.name}</p>
+                {contact.phone && (
+                  <p className="inline-flex items-center gap-2 text-primary-600">
+                    <Phone size={14} /> {contact.phone}
+                  </p>
+                )}
+                {contact.email && (
+                  <p className="inline-flex items-center gap-2 text-primary-600">
+                    <Mail size={14} /> {contact.email}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="mt-3">
+                <p className="inline-flex items-center gap-2 text-sm text-primary-500">
+                  <Lock size={14} /> Telefon &amp; E-Mail sind noch gesperrt.
+                </p>
+                <p className="mt-2 text-xs text-primary-400">
+                  {profile && profile.creditBalance >= 1
+                    ? "Wird mit 1 Freischaltung aus deinem Guthaben bezahlt."
+                    : `Einmalige Freischaltung für diesen Auftrag: CHF ${leadPrice}.`}
+                </p>
+                <form action={unlockJobContactAction.bind(null, job.id)} className="mt-3">
+                  <button
+                    type="submit"
+                    disabled={!profile || (profile.creditBalance < 1 && !stripeEnabled)}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-accent-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {profile && profile.creditBalance >= 1 ? (
+                      <>
+                        <Coins size={16} /> Mit Guthaben freischalten
+                      </>
+                    ) : (
+                      <>Kontakt freischalten (CHF {leadPrice})</>
+                    )}
+                  </button>
+                </form>
+                {(!profile || profile.creditBalance < 1) && !stripeEnabled && (
+                  <p className="mt-2 text-xs text-primary-400">
+                    Zahlungen sind aktuell noch nicht eingerichtet.
+                  </p>
+                )}
+                <Link
+                  href="/dashboard/handwerker/guthaben"
+                  className="mt-2 inline-block text-xs font-medium text-accent-600 hover:underline"
+                >
+                  Guthaben kaufen &amp; günstiger freischalten
+                </Link>
+              </div>
             )}
           </div>
         </div>

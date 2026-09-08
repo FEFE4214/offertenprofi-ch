@@ -10,6 +10,7 @@ import {
   jobs,
   offers,
   reviews,
+  leadUnlocks,
 } from "@/db/schema";
 
 export async function getCategories() {
@@ -307,6 +308,26 @@ export async function getCraftsmanServiceAreaCodes(profileId: string) {
     .from(craftsmanServiceAreas)
     .where(eq(craftsmanServiceAreas.craftsmanProfileId, profileId));
   return rows.map((c) => c.canton);
+}
+
+export async function getLeadUnlock(jobId: string, craftsmanUserId: string) {
+  const [row] = await db
+    .select()
+    .from(leadUnlocks)
+    .where(
+      and(
+        eq(leadUnlocks.jobId, jobId),
+        eq(leadUnlocks.craftsmanId, craftsmanUserId),
+        eq(leadUnlocks.status, "PAID")
+      )
+    );
+  return row ?? null;
+}
+
+export async function getCustomerContact(customerId: string) {
+  const [user] = await db.select().from(users).where(eq(users.id, customerId));
+  if (!user) return null;
+  return { name: user.name, phone: user.phone, email: user.email };
 }
 
 export async function getPlatformStats() {

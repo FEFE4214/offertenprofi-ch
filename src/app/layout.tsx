@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SupportChatWidget from "@/components/SupportChatWidget";
 
 export const metadata: Metadata = {
   title: "Offertenprofi.ch — Offerte leicht gemacht",
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
+        <SupportChatWidget />
       </body>
     </html>
   );

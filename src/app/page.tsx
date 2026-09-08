@@ -62,27 +62,28 @@ export default async function HomePage() {
           </div>
 
           <div className="rounded-2xl bg-white p-6 shadow-2xl md:p-8">
-            <h2 className="text-lg font-bold text-primary-800">Plattform in Zahlen</h2>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-50 px-3 py-1 text-xs font-semibold text-accent-600">
+              🚀 Wachsende Community
+            </span>
+            <h2 className="mt-3 text-lg font-bold text-primary-800">Offertenprofi.ch startet durch</h2>
+            <p className="mt-1.5 text-sm text-primary-500">
+              Wir vernetzen laufend neue, geprüfte Handwerksbetriebe aus der ganzen Schweiz mit
+              Kundinnen und Kunden, die ein Projekt umsetzen möchten.
+            </p>
             <div className="mt-5 grid grid-cols-2 gap-5">
               <div>
-                <p className="text-3xl font-extrabold text-primary-700">{stats.craftsmanCount}+</p>
-                <p className="text-sm text-primary-500">Registrierte Handwerker</p>
-              </div>
-              <div>
                 <p className="text-3xl font-extrabold text-primary-700">{stats.openJobsCount}</p>
-                <p className="text-sm text-primary-500">Offene Aufträge</p>
+                <p className="text-sm text-primary-500">Aktuell offene Aufträge</p>
               </div>
-              <div>
-                <p className="text-3xl font-extrabold text-primary-700">{stats.completedJobsCount}+</p>
-                <p className="text-sm text-primary-500">Erfolgreich vermittelt</p>
-              </div>
-              <div>
-                <p className="inline-flex items-center gap-1 text-3xl font-extrabold text-primary-700">
-                  {stats.avgRating ? stats.avgRating.toFixed(1) : "—"}
-                  <Star size={22} className="fill-accent-500 text-accent-500" />
-                </p>
-                <p className="text-sm text-primary-500">Ø Bewertung ({stats.reviewCount})</p>
-              </div>
+              {stats.reviewCount > 0 && (
+                <div>
+                  <p className="inline-flex items-center gap-1 text-3xl font-extrabold text-primary-700">
+                    {stats.avgRating.toFixed(1)}
+                    <Star size={22} className="fill-accent-500 text-accent-500" />
+                  </p>
+                  <p className="text-sm text-primary-500">Ø Bewertung ({stats.reviewCount})</p>
+                </div>
+              )}
             </div>
             <Link
               href="/handwerker"
