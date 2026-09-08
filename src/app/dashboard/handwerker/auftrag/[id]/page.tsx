@@ -1,0 +1,87 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import { MapPin, Calendar, Wallet, ArrowLeft } from "lucide-react";
+import { requireUser } from "@/lib/session";
+import { getJobDetail } from "@/lib/queries";
+import { cantonName } from "@/lib/cantons";
+import { JobStatusBadge, OfferStatusBadge } from "@/components/StatusBadge";
+import OfferForm from "./OfferForm";
+
+export const metadata: Metadata = { title: "Auftrag ansehen — Offertenprofi.ch" };
+
+type Props = { params: Promise<{ id: string }> };
+
+export default async function CraftsmanJobDetailPage({ params }: Props) {
+  const { id } = await params;
+  const user = await requireUser("CRAFTSMAN");
+  const detail = await getJobDetail(id);
+  if (!detail) notFound();
+
+  const { job, category, customerName, offers } = detail;
+  const myOffer = offers.find((o) => o.craftsmanId === user.id) ?? null;
+
+  return (
+    <div className="container-page py-12">
+      <Link href="/dashboard/handwerker" className="inline-flex items-center gap-1.5 text-sm text-primary-500 hover:text-accent-600">
+        <ArrowLeft size={14} /> Zurück zu den Aufträgen
+      </Link>
+
+      <div className="mt-4 grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <div className="rounded-2xl border border-primary-100 bg-white p-7">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <span className="text-xs font-medium text-primary-400">{category?.name}</span>
+                <h1 className="mt-0.5 text-2xl font-bold text-primary-800">{job.title}</h1>
+                <p className="mt-1 text-sm text-primary-500">Auftraggeber: {customerName}</p>
+                <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-primary-500">
+                  <span className="inline-flex items-center gap-1.5">
+                    <MapPin size={14} /> {job.city}, {cantonName(job.canton)}
+                  </span>
+                  {(job.budgetMin || job.budgetMax) && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Wallet size={14} /> CHF {job.budgetMin ?? "?"}–{job.budgetMax ?? "?"}
+                    </span>
+                  )}
+                  {job.desiredDate && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Calendar size={14} /> Wunschtermin: {job.desiredDate}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <JobStatusBadge status={job.status} />
+            </div>
+            <p className="mt-5 whitespace-pre-line text-primary-700">{job.description}</p>
+          </div>
+        </div>
+
+        <div className="lg:sticky lg:top-24 lg:h-fit">
+          <div className="rounded-2xl border border-primary-100 bg-white p-6">
+            <h2 className="font-semibold text-primary-800">Ihr Angebot</h2>
+
+            {myOffer ? (
+              <div className="mt-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xl font-bold text-primary-800">CHF {myOffer.price.toLocaleString("de-CH")}</p>
+                  <OfferStatusBadge status={myOffer.status} />
+                </div>
+                <p className="mt-2 text-sm text-primary-600">{myOffer.message}</p>
+                {myOffer.estimatedDuration && (
+                  <p className="mt-2 text-xs text-primary-400">Geschätzte Dauer: {myOffer.estimatedDuration}</p>
+                )}
+              </div>
+            ) : job.status === "OPEN" ? (
+              <OfferForm jobId={job.id} />
+            ) : (
+              <p className="mt-3 text-sm text-primary-500">
+                Dieser Auftrag ist nicht mehr offen für neue Angebote.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
